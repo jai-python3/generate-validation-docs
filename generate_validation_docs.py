@@ -15,25 +15,12 @@ from datetime import datetime
 from mailmerge import MailMerge
 from datetime import date
 
-DEFAULT_TEMPLATE_FILES_DIR = os.path.dirname(os.path.abspath(__file__)) + '/validation_documents/'
-
-IQ_TEMPLATE_FILE_BASENAME = 'IQ_Checklist_template.docx'
-OQ_TEMPLATE_FILE_BASENAME = 'OQ_Validation_Testing_Worksheet_template.docx'
-PQ_TEMPLATE_FILE_BASENAME = 'PQ_Validation_Testing_Worksheet_template.docx'
-SYSTEM_SPECIFICATION_TEMPLATE_FILE_BASENAME = 'System_Specification_template.docx'
-TEST_PLAN_TEMPLATE_FILE_BASENAME = 'Test_Plan_template.docx'
-USER_REQUIREMENTS_TEMPLATE_FILE_BASENAME = 'User_Requirements_template.docx'
-VALIDATION_REPORT_TEMPLATE_FILE_BASENAME = 'Validation_Report_template.docx'
-
-DEFAULT_document_prepared_by = 'Jaideep Sundaram'
-
 DEFAULT_DOCUMENT_PREPARED_DATE = str(datetime.today().strftime('%d-%b-%Y'))
 
 DEFAULT_OUTDIR = "/tmp/" + os.path.basename(__file__) + '/' + str(datetime.today().strftime('%Y-%m-%d-%H%M%S'))
 
-DEFAULT_CONFIG_FILE = os.path.dirname(os.path.abspath(__file__)) + '/conf/config.json'
-
 g_config = None
+g_config_dir = None
 g_software_name = None
 g_software_version = None
 g_document_prepared_by = None
@@ -81,24 +68,26 @@ def instantiate_mailmerge(template_file):
     return document
 
 
-def get_template_file(doc_type, default_template_file_basename=None):
+def get_template_file(doc_type):
     """Derive the template file from the config file
     :param doc_type: {str} document type
-    :param default_template_file_basename: {str}
     :return template_file: {str}
     """
     template_file_basename = None
 
     if doc_type not in g_config or 'template file basename' not in g_config[doc_type]:
-        template_file_basename = default_template_file_basename
-        logging.info("Could not retrieve the '{} 'template file basename' from the config file so set default '{}'".format(doc_type, template_file_basename))
+        error_msg = "Could not retrieve the '{} 'template file basename' from the config file so set default '{}'".format(doc_type, template_file_basename)
+        logging.error("Could not retrieve the '{} 'template file basename' from the config file so set default '{}'".format(doc_type, template_file_basename))
+        raise Exception(error_msg)
     else:
         template_file_basename = g_config[doc_type]['template file basename']
 
     template_file = os.path.join(g_template_files_dir, template_file_basename)
 
     if not os.path.exists(template_file):
-        logging.error("template file '{}' does not exist".format(template_file))
+        error_msg = "template file '{}' does not exist".format(template_file)
+        logging.error(error_msg)
+        raise Exception(error_msg)
 
     return template_file
 
@@ -110,10 +99,13 @@ def prepare_validation_document(template_file, outfile):
     :return:
     """
     if not os.path.exists(template_file):
-        logging.error("template file '{}' does not exist".format(template_file))
+        error_msg = "template file '{}' does not exist".format(template_file)
+        logging.error(error_msg)
+        raise Exception(error_msg)
 
     document = instantiate_mailmerge(template_file)
     document.write(outfile)
+    logging.info("Wrote output file '{}'".format(outfile))
     print("Wrote output file '{}'".format(outfile))
 
 
@@ -128,7 +120,7 @@ def get_iq_hardware_checklist_file(doc_type):
         raise Exception(error_msg)
     else:
         basename = g_config[doc_type]['hardware checklist file basename']
-        infile = os.path.dirname(os.path.abspath(__file__)) + '/conf/' + basename
+        infile = os.path.join(g_config_dir, basename)
 
     if not os.path.exists(infile):
         raise Exception("file '{}' does not exist".format(infile))
@@ -198,7 +190,7 @@ def get_iq_software_checklist_file(doc_type):
         raise Exception(error_msg)
     else:
         basename = g_config[doc_type]['software checklist file basename']
-        infile = os.path.dirname(os.path.abspath(__file__)) + '/conf/' + basename
+        infile = os.path.join(g_config_dir, basename)
 
     if not os.path.exists(infile):
         raise Exception("file '{}' does not exist".format(infile))
@@ -274,7 +266,7 @@ def prepare_iq():
         g_iq_date = ''
         logging.info("Will not prepare a partially executed IQ validation document")
 
-    template_file = get_template_file(doc_type, IQ_TEMPLATE_FILE_BASENAME)
+    template_file = get_template_file(doc_type)
 
     document = instantiate_mailmerge(template_file)
 
@@ -302,7 +294,7 @@ def get_oq_checklist_file(doc_type='OQ'):
         raise Exception(error_msg)
     else:
         basename = g_config[doc_type]['checklist file basename']
-        infile = os.path.dirname(os.path.abspath(__file__)) + '/conf/' + basename
+        infile = os.path.join(g_config_dir, basename)
 
     if not os.path.exists(infile):
         raise Exception("'{}' checklist file '{}' does not exist".format(doc_type, infile))
@@ -382,7 +374,7 @@ def get_oq_test_data_file(doc_type='OQ'):
         logging.warning(error_msg)
     else:
         basename = g_config[doc_type]['test data file basename']
-        infile = os.path.dirname(os.path.abspath(__file__)) + '/conf/' + basename
+        infile = os.path.join(g_config_dir, basename)
         if not os.path.exists(infile):
             raise Exception("'{}' test data file '{}' does not exist".format(doc_type, infile))
 
@@ -453,7 +445,7 @@ def prepare_oq():
         g_oq_date = ''
         logging.info("Will not prepare a partially executed OQ validation document")
 
-    template_file = get_template_file(doc_type, OQ_TEMPLATE_FILE_BASENAME)
+    template_file = get_template_file(doc_type)
 
     document = instantiate_mailmerge(template_file)
 
@@ -492,7 +484,7 @@ def prepare_pq():
         g_pq_date = ''
         logging.info("Will not prepare a partially executed PQ validation document")
 
-    template_file = get_template_file(doc_type, PQ_TEMPLATE_FILE_BASENAME)
+    template_file = get_template_file(doc_type)
 
     document = instantiate_mailmerge(template_file)
 
@@ -516,7 +508,7 @@ def prepare_system_specification():
     :return None:
     """
     doc_type = 'System Specification'
-    template_file = get_template_file(doc_type, SYSTEM_SPECIFICATION_TEMPLATE_FILE_BASENAME)
+    template_file = get_template_file(doc_type)
 
     document = instantiate_mailmerge(template_file)
     
@@ -539,7 +531,7 @@ def prepare_test_plan():
     """
 
     doc_type = 'Test Plan'
-    template_file = get_template_file(doc_type, TEST_PLAN_TEMPLATE_FILE_BASENAME)
+    template_file = get_template_file(doc_type)
 
     document = instantiate_mailmerge(template_file)
 
@@ -574,7 +566,7 @@ def get_user_requirements_checklist_file(doc_type='User Requirements'):
         raise Exception(error_msg)
     else:
         basename = g_config[doc_type]['checklist file basename']
-        infile = os.path.dirname(os.path.abspath(__file__)) + '/conf/' + basename
+        infile = os.path.join(g_config_dir, basename)
 
     if not os.path.exists(infile):
         raise Exception("file '{}' does not exist".format(infile))
@@ -631,7 +623,7 @@ def prepare_user_requirements():
     """
     doc_type = 'User Requirements'
 
-    template_file = get_template_file(doc_type, USER_REQUIREMENTS_TEMPLATE_FILE_BASENAME)
+    template_file = get_template_file(doc_type)
 
     document = instantiate_mailmerge(template_file)
 
@@ -650,57 +642,42 @@ def prepare_validation_report():
     """Prepare the Validation Report validation document
     :return None:
     """
-    template_file = os.path.join(g_template_files_dir, VALIDATION_REPORT_TEMPLATE_FILE_BASENAME)
+    doc_type = 'Validation Report'
+    template_file = get_template_file(doc_type)
     outfile = g_outdir + '/' + g_software_name + ' ' + g_software_version + ' - Validation Report - ' + g_document_prepared_date + '.docx'
     prepare_validation_document(template_file, outfile)
 
 
 @click.command()
-@click.option('--verbose', is_flag=True, help='Will print more info to STDOUT')
 @click.option('--outdir', help='The default is the current working directory')
 @click.option('--config_file', type=click.Path(exists=True), help="The configuration file for this project")
 @click.option('--logfile', help="The log file")
-@click.option('--outfile', help="The output final report file")
 @click.option('--template_files_dir', help="The directory containing the template files")
 @click.option('--software_name', help="The name of the software system")
 @click.option('--software_version', help="The version of the software system")
 @click.option('--server', help="The server on which the software will be installed and validated on")
 @click.option('--document_prepared_by', help="The name of the person that prepared the document")
 @click.option('--document_prepared_date', help="The date the document was prepared")
-def main(verbose, outdir, config_file, logfile, outfile, template_files_dir, software_name, software_version, server, document_prepared_by, document_prepared_date):
+def main(outdir, config_file, logfile, template_files_dir, software_name, software_version, server, document_prepared_by, document_prepared_date):
     """Template command-line executable
     """
 
     error_ctr = 0
 
-    if software_name is None:
-        print(Fore.RED + "--software_name was not specified")
-        print(Style.RESET_ALL + '', end='')
-        error_ctr += 1
-
-    if software_version is None:
-        print(Fore.RED + "--software_version was not specified")
-        print(Style.RESET_ALL + '', end='')
-        error_ctr += 1
-
-    if server is None:
-        print(Fore.RED + "--server was not specified")
+    if config_file is None:
+        print(Fore.RED + "--config_file was not specified")
         print(Style.RESET_ALL + '', end='')
         error_ctr += 1
 
     if error_ctr > 0:
         sys.exit(1)
+    
+    assert isinstance(config_file, str)
 
-    assert isinstance(software_name, str)
-    assert isinstance(software_version, str)
-    assert isinstance(server, str)
-
-    if document_prepared_by is None:
-        document_prepared_by = DEFAULT_document_prepared_by
-        print(Fore.YELLOW + "--document_prepared_by was not specified and therefore was set to '{}'".format(document_prepared_by))
+    if not os.path.exists(config_file):
+        print(Fore.RED + "config_file '{}' does not exist".format(config_file))
         print(Style.RESET_ALL + '', end='')
-
-    assert isinstance(document_prepared_by, str)
+        sys.exit(1)
 
     if document_prepared_date is None:
         document_prepared_date = DEFAULT_DOCUMENT_PREPARED_DATE
@@ -708,18 +685,6 @@ def main(verbose, outdir, config_file, logfile, outfile, template_files_dir, sof
         print(Style.RESET_ALL + '', end='')
 
     assert isinstance(document_prepared_date, str)
-        
-    if config_file is None:
-        config_file = DEFAULT_CONFIG_FILE
-        print(Fore.YELLOW + "--config_file was not specified and therefore was set to '{}'".format(config_file))
-        print(Style.RESET_ALL + '', end='')
-
-    assert isinstance(config_file, str)
-
-    if not os.path.exists(config_file):
-        print(Fore.RED + "config_file '{}' does not exist".format(config_file))
-        print(Style.RESET_ALL + '', end='')
-        sys.exit(1)
 
     if outdir is None:
         outdir = DEFAULT_OUTDIR
@@ -740,37 +705,60 @@ def main(verbose, outdir, config_file, logfile, outfile, template_files_dir, sof
 
     assert isinstance(logfile, str)
 
-    if outfile is None:
-        outfile = outdir + '/' + software_name + '_' + software_version + '_IQ_Checklist_' + document_prepared_date + '.docx'
-        print(Fore.YELLOW + "--outfile was not specified and therefore was set to '{}'".format(outfile))
-        print(Style.RESET_ALL + '', end='')
-
-    assert isinstance(outfile, str)
-
     logging.basicConfig(filename=logfile, format=LOGGING_FORMAT, level=LOG_LEVEL)
 
-    # Read the configuration from the JSON file and load into dictionary.
     logging.info("Loading configuration from '{}'".format(config_file))
 
     global g_config
     g_config = json.loads(open(config_file).read())
 
-    if template_files_dir is None:
-        if 'template_files_dir' not in g_config:
-            template_files_dir = DEFAULT_TEMPLATE_FILES_DIR
-            print(Fore.YELLOW + "--template_files_dir was not specified and therefore was set to default '{}'".format(template_files_dir))
+    if document_prepared_by is None:
+        if 'default document prepared by' in g_config:
+            document_prepared_by = g_config['default document prepared by']
+            print(Fore.YELLOW + "--document_prepared_by was not specified and therefore was set to '{}'".format(document_prepared_by))
             print(Style.RESET_ALL + '', end='')
         else:
-            template_files_dir = config['template_files_dir']
+            document_prepared_by = input("What is the first and last name of the person that will prepare the documents? ")
+            document_prepared_by = document_prepared_by.strip()
+
+    if template_files_dir is None:
+        if 'template_files_dir' in g_config:
+            template_files_dir = g_config['template_files_dir']
             print(Fore.YELLOW + "--template_files_dir was not specified and therefore was set to '{}'".format(template_files_dir))
             print(Style.RESET_ALL + '', end='')
-
-    assert isinstance(template_files_dir, str)
-
+        else:
+            template_files_dir = os.path.dirname(os.path.abspath(config_file)) + '/template_files_dir'
+            if os.path.exists(template_files_dir):
+                print(Fore.YELLOW + "--template_files_dir was not specified and therefore was set to '{}'".format(template_files_dir))
+                print(Style.RESET_ALL + '', end='')
+            else:
+                raise Exception("'template_files_dir' does not exist in the configuration file '{}' and was not found here '{}'".format(config_file, template_files_dir))
+            
     if not os.path.exists(template_files_dir):
         print(Fore.RED + "template_files_dir '{}' does not exist".format(template_files_dir))
         print(Style.RESET_ALL + '', end='')
         sys.exit(1)
+
+    if software_name is None:
+        if 'software_name' in g_config:
+            software_name = g_config['software_name']
+        else:
+            software_name = input("What is the software name? ")
+            software_name = software_name.strip()
+
+    if software_version is None:
+        if 'software_version' in g_config:
+            software_version = g_config['software_version']
+        else:
+            software_version = input("What is the software version? ")
+            software_version = software_version.strip()
+
+    if server is None:
+        if 'server' in g_config:
+            server = g_config['server']
+        else:
+            server = input("What is the server? ")
+            server = server.strip()
 
     global g_software_name
     global g_software_version
@@ -779,6 +767,7 @@ def main(verbose, outdir, config_file, logfile, outfile, template_files_dir, sof
     global g_template_files_dir
     global g_outdir
     global g_server
+    global g_config_dir
 
     g_software_name = software_name
     g_software_version = software_version
@@ -787,6 +776,23 @@ def main(verbose, outdir, config_file, logfile, outfile, template_files_dir, sof
     g_outdir = outdir
     g_template_files_dir = template_files_dir
     g_server = server
+    g_config_dir = os.path.dirname(os.path.abspath(config_file))
+
+    print("\nHere are the key values:")
+    print("software name: {}".format(g_software_name))
+    print("software version: {}".format(g_software_version))
+    print("server: {}".format(g_server))
+    print("document prepared by: {}".format(g_document_prepared_by))
+    print("document prepared date: {}".format(g_document_prepared_date))
+    print("template files directory: {}".format(g_template_files_dir))
+    print("config directory: {}".format(g_config_dir))
+
+    proceed_yes_or_no = input("\nOkay to proceed? [Y/n] ")
+    if proceed_yes_or_no is None or proceed_yes_or_no is '' or proceed_yes_or_no == 'Y' or proceed_yes_or_no == 'y':
+        pass
+    else:
+        print("Will not proceed.  Please rerun when ready.")
+        sys.exit(0)
 
     prepare_iq()
     prepare_oq()
