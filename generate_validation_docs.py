@@ -611,7 +611,8 @@ def get_user_requirements_table_records(doc_type='User Requirements'):
                     'id': ur_id,
                     'req': row[header_to_position_lookup['Requirement Description']],
                     'criticality': row[header_to_position_lookup['Criticality']],
-                    'comment': ''
+                    'comment': row[header_to_position_lookup['Comment']],
+                    'test_id': row[header_to_position_lookup['Test ID']]
                 })
 
                 record_ctr += 1
@@ -650,8 +651,13 @@ def prepare_validation_report():
     """
     doc_type = 'Validation Report'
     template_file = get_template_file(doc_type)
+    document = instantiate_mailmerge(template_file)
+
     outfile = g_outdir + '/' + g_software_name + ' ' + g_software_version + ' - Validation Report - ' + g_document_prepared_date + '.docx'
-    prepare_validation_document(template_file, outfile)
+    user_req_table_records = get_user_requirements_table_records('User Requirements')
+    document.merge_rows('id', user_req_table_records)
+    document.write(outfile)
+    print("Wrote '{}' validation document  '{}'".format(doc_type, outfile))
 
 
 @click.command()
