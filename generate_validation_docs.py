@@ -590,6 +590,7 @@ def get_user_requirements_table_records(doc_type='User Requirements'):
     with open(infile) as f:
         reader = csv.reader(f, delimiter='\t')
         row_ctr = 0
+        id_header_found = False
         for row in reader:
             row_ctr += 1
             if row_ctr == 1:
@@ -597,12 +598,17 @@ def get_user_requirements_table_records(doc_type='User Requirements'):
                 for field in row:
                     header_to_position_lookup[field] = field_ctr
                     field_ctr += 1
+                    if field == 'ID':
+                        id_header_found = True
                 logging.info("Processed the header of csv file '{}'".format(infile))
             else:
                 id_ctr += 1
+                ur_id = str(id_ctr)
+                if id_header_found:
+                    ur_id = row[header_to_position_lookup['ID']]
 
                 table_records.append({
-                    'id': str(id_ctr),
+                    'id': ur_id,
                     'req': row[header_to_position_lookup['Requirement Description']],
                     'criticality': row[header_to_position_lookup['Criticality']],
                     'comment': ''
