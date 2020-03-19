@@ -43,12 +43,85 @@ g_oq_date = None
 g_pq_yes_no = None
 g_pq_date = None
 
+g_version_history_comment = None
+g_version_history_records = None
+
 g_reminders = ["Update version history file", "Create OQ and PQ replicate folders", "Verify ending test numbers in the Test Plan"]
 
 LOGGING_FORMAT = "%(levelname)s : %(asctime)s : %(pathname)s : %(lineno)d : %(message)s"
 
 LOG_LEVEL = logging.INFO
 
+
+def get_version_history_file():
+    """Derive the OQ checklist tab-delimited file
+    :return infile: {str} the absolute path to the OQ checklist tab-delimited file
+    """
+    if 'version history file basename' not in g_config:
+        error_msg = "Could not retrieve the 'version history file basename' from the config file"
+        logging.error(error_msg)
+        raise Exception(error_msg)
+    else:
+        basename = g_config['version history file basename']
+        infile = os.path.join(g_config_dir, basename)
+
+    if not os.path.exists(infile):
+        raise Exception("version history file '{}' does not exist".format(infile))
+
+    return infile
+
+
+def get_version_history_records():
+    """Retrieve the version history records from the tab-delimited file
+    :return version_history_records: {list} containing version history records
+    """
+
+    global g_version_history_records
+
+    if g_version_history_records is None or len(g_version_history_records) == 0:
+
+        infile = get_version_history_file()
+
+        header_to_position_lookup = {}
+        record_ctr = 0
+        version_history_records = []
+
+        with open(infile) as f:
+            reader = csv.reader(f, delimiter='\t')
+            row_ctr = 0
+            for row in reader:
+                row_ctr += 1
+                if row_ctr == 1:
+                    field_ctr = 0
+                    for field in row:
+                        header_to_position_lookup[field] = field_ctr
+                        field_ctr += 1
+                    logging.info("Processed the header of tsv file '{}'".format(infile))
+                else:
+                    version_history_records.append({
+                        'vh_id': row[header_to_position_lookup['Version']],
+                        'vh_date': row[header_to_position_lookup['Date']],
+                        'vh_comment': row[header_to_position_lookup['Comment']]
+                    })
+
+                    record_ctr += 1
+
+            logging.info("Processed '{}' records in tab-delimited file '{}'".format(record_ctr, infile))
+
+        global g_version_history_comment
+
+        if g_version_history_comment is None or g_version_history_comment is '':
+            g_version_history_comment = input("Please provide the version history comment for version '{}': ".format(g_software_version))
+            g_version_history_comment.strip()
+            version_history_records.append({
+                'vh_id': g_software_version,
+                'vh_date': g_document_prepared_date,
+                'vh_comment': g_version_history_comment
+            })
+
+        g_version_history_records = version_history_records
+
+    return g_version_history_records
 
 def display_reminders():
     """Print the reminders to the STDOUT and log file
@@ -564,6 +637,9 @@ def prepare_test_plan():
     document.merge_rows('h_id', hardware_table_records)
     document.merge_rows('s_id', software_table_records)
 
+    version_history_records = get_version_history_records()
+    document.merge_rows('vh_id', version_history_records)
+
     document.write(outfile)
 
     print("Wrote '{}' validation document  '{}'".format(doc_type, outfile))
@@ -670,6 +746,10 @@ def prepare_validation_report():
     outfile = g_outdir + '/' + g_software_name + ' ' + g_software_version + ' - Validation Report - ' + g_document_prepared_date + '.docx'
     user_req_table_records = get_user_requirements_table_records('User Requirements')
     document.merge_rows('id', user_req_table_records)
+
+    version_history_records = get_version_history_records()
+    document.merge_rows('vh_id', version_history_records)
+
     document.write(outfile)
     print("Wrote '{}' validation document  '{}'".format(doc_type, outfile))
 
