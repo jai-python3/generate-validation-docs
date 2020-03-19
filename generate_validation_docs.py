@@ -43,9 +43,23 @@ g_oq_date = None
 g_pq_yes_no = None
 g_pq_date = None
 
+g_reminders = ["Update version history file", "Create OQ and PQ replicate folders", "Verify ending test numbers in the Test Plan"]
+
 LOGGING_FORMAT = "%(levelname)s : %(asctime)s : %(pathname)s : %(lineno)d : %(message)s"
 
 LOG_LEVEL = logging.INFO
+
+
+def display_reminders():
+    """Print the reminders to the STDOUT and log file
+    :return None:
+    """
+    count = len(g_reminders)
+    if count > 0:
+        print("\n\nSome friendly reminders:")
+        for i, reminder in enumerate(g_reminders, start=1):
+            print("{}. {}".format(i, reminder))
+            logging.info("{}. {}".format(i, reminder))
 
 
 def instantiate_mailmerge(template_file):
@@ -813,6 +827,8 @@ def main(outdir, config_file, logfile, template_files_dir, software_name, softwa
     prepare_test_plan()
     prepare_user_requirements()
     prepare_validation_report()
+
+    display_reminders()
 
 
 if __name__ == "__main__":
