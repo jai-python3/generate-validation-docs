@@ -46,7 +46,7 @@ g_pq_date = None
 g_version_history_comment = None
 g_version_history_records = None
 
-g_reminders = ["Update version history file", "Create OQ and PQ replicate folders", "Verify ending test numbers in the Test Plan"]
+g_reminders = ["Create OQ and PQ replicate folders", "Verify ending test numbers in the Test Plan"]
 
 LOGGING_FORMAT = "%(levelname)s : %(asctime)s : %(pathname)s : %(lineno)d : %(message)s"
 
@@ -112,7 +112,7 @@ def get_version_history_records():
 
         if g_version_history_comment is None or g_version_history_comment is '':
             g_version_history_comment = input("Please provide the version history comment for version '{}': ".format(g_software_version))
-            g_version_history_comment.strip()
+            g_version_history_comment = g_version_history_comment.strip()
             version_history_records.append({
                 'vh_id': g_software_version,
                 'vh_date': g_document_prepared_date,
@@ -121,7 +121,38 @@ def get_version_history_records():
 
         g_version_history_records = version_history_records
 
+        update_version_history_file(infile)
+
     return g_version_history_records
+
+
+def update_version_history_file(version_history_file):
+    """Append the new record to the bottom of the version history file
+    :param version_history_file: {str} abspath for the version history file
+    :return None:
+    """
+
+    yes_or_no = input("\nAppend record to version history file '{}'? [Y/n] ".format(version_history_file))
+    
+    if yes_or_no is None or yes_or_no is '' or yes_or_no == 'Y' or yes_or_no == 'y':
+        with open(version_history_file, 'a') as fh:
+            fh.write("{}\t{}\t{}\n".format(g_software_version, g_document_prepared_date, g_version_history_comment))
+
+        logging.info("Appended record '{}' '{}' '{}' to version history file '{}'".format(g_software_version,
+                                                                                          g_document_prepared_date,
+                                                                                          g_version_history_comment,
+                                                                                          version_history_file))
+    else:
+        logging.info("Will not appended record '{}' '{}' '{}' to version history file '{}'".format(g_software_version,
+                                                                                                   g_document_prepared_date,
+                                                                                                   g_version_history_comment,
+                                                                                                   version_history_file))
+        global g_reminders
+        g_reminders.append("Append record '{}' '{}' '{}' to version history file '{}'".format(g_software_version,
+                                                                                                   g_document_prepared_date,
+                                                                                                   g_version_history_comment,
+                                                                                                   version_history_file))
+
 
 def display_reminders():
     """Print the reminders to the STDOUT and log file
