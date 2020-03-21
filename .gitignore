@@ -128,3 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 *.bak
+
+validation_documents
+etc_coverpage_conf
+generate_validation_docs_conf
