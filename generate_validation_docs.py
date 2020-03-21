@@ -1,3 +1,4 @@
+import subprocess
 import csv
 from docx import Document
 from docx.shared import Inches
@@ -581,6 +582,56 @@ def prepare_oq():
 
     print("Wrote '{}' validation document  '{}'".format(doc_type, outfile))
 
+    if g_oq_yes_no == 'Yes':
+        yes_no = input("\nPrepare OQ replicate folders? [Y/n] ")
+        yes_no = yes_no.strip()
+        if yes_no is None or yes_no == '' or yes_no == 'Y' or yes_no == 'y':
+            logging.info("Will prepare OQ replicate folders")
+            prepare_replicate_folders('OQ')            
+        elif yes_no == 'N' or yes_no == 'n':
+            logging.info("Will not prepare OQ replicate folders")
+
+
+def prepare_replicate_folders(type):
+    """Prepare the OQ replicate folders
+    :param type: {str} either OQ or PQ
+    """
+    if 'executed_validation_documents_folder' in g_config:
+
+        dir = g_config['executed_validation_documents_folder']
+        
+        dir1 = dir + '/' + g_software_version + '/' + g_document_prepared_date + '/' + type + '-replicate-1'
+        
+        create_remote_directory(dir1)
+        
+        dir2 = dir + '/' + g_software_version + '/' + g_document_prepared_date + '/' + type + '-replicate-2'
+        
+        create_remote_directory(dir2)
+    else:
+        logging.warning("'executed_validation_documents_folder' does not exist in the configuration file so will not be able to create the '{}' replicate folders".format(type))
+
+
+def create_remote_directory(dir):
+    """
+    """
+    if 'sshkey_file' in g_config:
+        
+        sshkey_file = g_config['sshkey_file']
+        
+        if not os.path.exists(sshkey_file):
+            raise Exception("sshkey file '{}' does not exist".format(sshkey_file))
+                
+        cmd = "ssh -i {} root@{} mkdir -p {}".format(sshkey_file, g_server, dir)
+        
+        logging.info("About to execute '{}'".format(cmd))
+        
+        retval = subprocess.call(cmd, shell=True)
+        
+        logging.info("return value: {}".format(retval))
+    else:
+        logging.warning("Cannot create the '{}' replicate folders because sshkey_file is not defined in the configuration file".format(type))
+
+
 
 def prepare_pq():
     """Prepare the PQ Validation Testing Worksheet validation document
@@ -619,6 +670,15 @@ def prepare_pq():
     document.write(outfile)
 
     print("Wrote '{}' validation document  '{}'".format(doc_type, outfile))
+
+    if g_pq_yes_no == 'Yes':
+        yes_no = input("\nPrepare PQ replicate folders? [Y/n] ")
+        yes_no = yes_no.strip()
+        if yes_no is None or yes_no == '' or yes_no == 'Y' or yes_no == 'y':
+            logging.info("Will prepare PQ replicate folders")
+            prepare_replicate_folders('PQ')
+        elif yes_no == 'N' or yes_no == 'n':
+            logging.info("Will not prepare PQ replicate folders")
 
 
 def prepare_system_specification():
