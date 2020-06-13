@@ -135,7 +135,7 @@ def update_version_history_file(version_history_file):
 
     yes_or_no = input("\nAppend record to version history file '{}'? [Y/n] ".format(version_history_file))
     
-    if yes_or_no is None or yes_or_no is '' or yes_or_no == 'Y' or yes_or_no == 'y':
+    if yes_or_no is None or yes_or_no == '' or yes_or_no == 'Y' or yes_or_no == 'y':
         with open(version_history_file, 'a') as fh:
             fh.write("{}\t{}\t{}\n".format(g_software_version, g_document_prepared_date, g_version_history_comment))
 
@@ -500,7 +500,7 @@ def get_oq_test_data_file(doc_type='OQ'):
     return infile
 
 
-def get_oq_test_data_records(doc_type='OQ'):
+def get_oq_test_data_records(doc_type : str = 'OQ') -> list:
     """Retrieve the OQ checklist data for replicate 1 and replicate 2 from the tab-delimited file
     :param doc_type: {str} the document type default 'OQ'
     :return checklist_tables: {list} containing two arrays for each checklist replicate which in turn are arrays of dictionaries
